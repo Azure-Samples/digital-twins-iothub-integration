@@ -47,7 +47,7 @@ namespace Samples.AdtIothub
                     JObject jbody = (JObject)JsonConvert.DeserializeObject(messageBody);
                     string deviceId = eventData.SystemProperties["iothub-connection-device-id"].ToString();
 
-                    string dtid = deviceId; // simple mapping
+                    string dtId = deviceId; // simple mapping
 
                     // Extracting temperature from device telemetry
                     double temperature = Convert.ToDouble(jbody["Temperature"].ToString());
@@ -55,8 +55,8 @@ namespace Samples.AdtIothub
                     // Update device Temperature property
                     UpdateOperationsUtility uou = new UpdateOperationsUtility();
                     uou.AppendAddOp("/Temperature", temperature);
-                    await client.UpdateDigitalTwinAsync(dtid, uou.Serialize());
-                    log.LogInformation($"Updated Temperature of device Twin '{dtid}' to: {temperature}");
+                    await client.UpdateDigitalTwinAsync(dtId, uou.Serialize());
+                    log.LogInformation($"Updated Temperature of device Twin '{dtId}' to: {temperature}");
                 }
                 catch (Exception e)
                 {

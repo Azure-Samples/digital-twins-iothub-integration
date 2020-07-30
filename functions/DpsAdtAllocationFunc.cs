@@ -68,7 +68,7 @@ namespace Samples.AdtIothub
                     dynamic payloadContext = data?.deviceRuntimeContext?.payload;
                     string dtmi = payloadContext.modelId;
                     log.LogDebug($"payload.modelId: {dtmi}");
-                    string dtid = await FindOrCreateTwin(dtmi, regId, log);
+                    string dtId = await FindOrCreateTwin(dtmi, regId, log);
 
                     // Get first linked hub (TODO: select one of the linked hubs based on policy)
                     obj.iotHubHostName = hubs[0];
@@ -76,7 +76,7 @@ namespace Samples.AdtIothub
                     // Specify the initial tags for the device.
                     TwinCollection tags = new TwinCollection();
                     tags["dtmi"] = dtmi;
-                    tags["dtid"] = dtid;
+                    tags["dtId"] = dtId;
 
                     // Specify the initial desired properties for the device.
                     TwinCollection properties = new TwinCollection();
@@ -101,20 +101,20 @@ namespace Samples.AdtIothub
             var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred, new DigitalTwinsClientOptions { Transport = new HttpClientTransport(httpClient) });
 
             // Find existing twin with registration ID
-            string dtid;
+            string dtId;
             string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}' AND IS_OF_MODEL('{dtmi}')";
             AsyncPageable<string> twins = client.QueryAsync(query);
             await foreach (string twinJson in twins)
             {
                 // Get DT ID from the Twin
                 JObject twin = (JObject)JsonConvert.DeserializeObject(twinJson);
-                dtid = (string)twin["$dtId"];
-                log.LogInformation($"Twin '{dtid}' with Registration ID '{regId}' found in DT");
-                return dtid;
+                dtId = (string)twin["$dtId"];
+                log.LogInformation($"Twin '{dtId}' with Registration ID '{regId}' found in DT");
+                return dtId;
             }
 
             // Not found, so create new twin
-            dtid = regId; // use the Registration ID as the DT ID
+            dtId = regId; // use the Registration ID as the DT ID
 
             // Define the model type for the twin to be created
             Dictionary<string, object> meta = new Dictionary<string, object>()
@@ -127,10 +127,10 @@ namespace Samples.AdtIothub
                 { "$metadata", meta },
                 { "HubRegistrationId", regId }
             };
-            await client.CreateDigitalTwinAsync(dtid, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
-            log.LogInformation($"Twin '{dtid}' created in DT");
+            await client.CreateDigitalTwinAsync(dtId, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
+            log.LogInformation($"Twin '{dtId}' created in DT");
 
-            return dtid;
+            return dtId;
         }
     }
 
