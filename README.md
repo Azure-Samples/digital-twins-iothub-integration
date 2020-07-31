@@ -1,3 +1,18 @@
+---
+page_type: sample
+languages:
+- csharp
+- nodejs
+products:
+- dotnet
+- azure-iot
+- azure-iot-hub
+- azure-iot-dps
+- azure-digital-twins
+- azure-functions
+- vs-code
+---
+
 # Azure Digital Twin and IoT Hub Integration Sample
 
 This is a sample project to show possible patterns for the automatic integration of the new Azure Digital Twins and IoT Hub. The following scenarios are implemented:
@@ -7,6 +22,7 @@ This is a sample project to show possible patterns for the automatic integration
 * An Azure Function that maps device telemetry to the ADT twin instance and updates a property on the twin (a Temperature Property).
 * An Azure Function that implements the automatic deletion of an Azure Digital Twin entity when the linked device is deleted in IoT Hub.
 * Two Event Hubs for the telemetry messages and device lifecycle events to automatically interact with ADT.
+* A Node.js application to simulate a device.
 
 ## How to use this sample
 
