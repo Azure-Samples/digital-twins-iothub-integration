@@ -8,6 +8,8 @@ var crypto = require('crypto');
 const dotenv = require('dotenv');
 dotenv.config();
 
+var myArgs = process.argv.slice(2);
+
 // Provisioning
 var ProvisioningTransport = require('azure-iot-provisioning-device-mqtt').Mqtt;
 var SymmetricKeySecurityClient = require('azure-iot-security-symmetric-key').SymmetricKeySecurityClient;
@@ -32,6 +34,8 @@ var idScope = process.env.PROVISIONING_IDSCOPE;
 // The registration id of the device to be registered.
 //
 var registrationId = process.env.PROVISIONING_REGISTRATION_ID;
+if (typeof myArgs[0] == 'string') registrationId = myArgs[0]
+console.log('registrationId=' + registrationId);
 
 // The ADT Model Id needs to be provided
 var adtModelId = process.env.ADT_MODEL_ID;

@@ -10,27 +10,31 @@ This is a sample project to show possible patterns for the automatic integration
 
 ## How to use this sample
 
-* Set up an Azure Digital Twin Service using the [documentation](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-scripted)
+* Set up an Azure Digital Twin Service using the [documentation](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-scripted).
 * Create an IoT Hub, Device Provisioning Service and an Azure Functions service.
 * Create an Event Hubs namespace and two event hubs. 
   - `lifecycleevents`
   - `deviceevents`
 * Create a consumer group in each event hub.
 * Create two endpoints in Azure IoT Hub: pointing to each of the Event Hubs.
-* Create a Route for device events deviceevents endpoint. 
-* Create a Route for Device Lifecycle events to the lifecycleevents event hub endpoint.
+* Create a Route for Device Messages to the `deviceevents` endpoint. 
+* Create a Route for Device Lifecycle Events to the `lifecycleevents` endpoint.
 * Download and install Visual Studio Code and the following extensions:
   * Azure IoT Tools
   * Azuer Functions
 * Clone this repo
-* `cd functions`
-* `dotnet restore`
+  * `cd functions`
+  * `dotnet restore`
 * Deploy the application to your Azure Functions. Set the following configuration app settings:
   - `AdtAppId`
   - `AdtInstanceUrl`
   - `EVENTHUB_CONNECTIONSTRING`
 * Create a Group Enrollment in DPS and link to the `DpsAdtAllocationFunc` in your functions instance.
-* Customise the device simulator code with the credentials for your DPS Scope and run the code.
+* Customise the device simulator .env file with the credentials for your DPS Scope.
+* Restore the packages and run the device simulator code
+  * `npm install`
+  * `node .\adt_custom_register.js [registrationId]`
+* Use the [Azure Digital Twins Explorer](https://github.com/Azure-Samples/digital-twins-explorer) to view the registered devices.
 
 # Key Concepts
 
