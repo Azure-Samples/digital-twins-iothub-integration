@@ -11,6 +11,7 @@ This is a sample project to show possible patterns for the automatic integration
 ## How to use this sample
 
 * Set up an Azure Digital Twin Service using the [documentation](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-scripted).
+* Use the [Azure Digital Twins Explorer](https://docs.microsoft.com/en-us/samples/azure-samples/digital-twins-explorer/digital-twins-explorer/) to upload the `SpaceModel.json` and `ThermostatModel.json` found under the folder `/models`. Through the Explorer tool, create a parent and a few chidren Thermostat objects. In the twins of type `Thermostat` you will see a property `HubRegistrationId`. This property can be used on one of the twins to reflect the RegistrationId that you will be using in DPS and automatically assigning the device to a twin.
 * Create an IoT Hub, Device Provisioning Service and an Azure Functions service.
 * Create an Event Hubs namespace and two event hubs. 
   - `lifecycleevents`
@@ -31,6 +32,13 @@ This is a sample project to show possible patterns for the automatic integration
   - `EVENTHUB_CONNECTIONSTRING`
 * Create a Group Enrollment in DPS and link to the `DpsAdtAllocationFunc` in your functions instance.
 * Customise the device simulator .env file with the credentials for your DPS Scope.
+* Customise and run the `device-simulator` code:
+  - Rename `.env.template` to `.env`.
+  - Set the variables:
+    - `PROVISIONING_IDSCOPE` to the scope of your DPS
+    - `PROVISIONING_REGISTRATION_ID` to your registration ID, if you assigned one or specificy something unique
+    - `ADT_MODEL_ID` set this to `dtmi:contosocom:DigitalTwins:Thermostat;2`
+    - `PROVISIONING_SYMMETRIC_KEY` to your DPS enrollment master key, the script calculates a derived key. *Note this is for testing only, we never recommend having the master key on the device*.
 * Restore the packages and run the device simulator code
   * `npm install`
   * `node .\adt_custom_register.js [registrationId]`
