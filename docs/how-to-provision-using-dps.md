@@ -1,6 +1,6 @@
 ---
 # Mandatory fields.
-title: Azure Digital Twins auto-provisiong using Device Provisioning Service
+title: Azure Digital Twins auto-provisioning using Device Provisioning Service
 titleSuffix: Azure Digital Twins
 description: See how to set up automated process to provision and retire IoT devices in Azure Digital Twins using Device Provisioning Service.
 author: michielvanschaik
@@ -15,7 +15,7 @@ ms.service: digital-twins
 # manager: MSFT-alias-of-manager-or-PM-counterpart
 ---
 
-# Azure Digital Twins auto-provisiong using Device Provisioning Service
+# Azure Digital Twins auto-provisioning using Device Provisioning Service
 
 In this article, you'll learn how to integrate Azure Digital Twins with [Device Provisioning Service (DPS)](https://docs.microsoft.com/en-us/azure/iot-dps/about-iot-dps).
 
@@ -50,7 +50,7 @@ Next are the process steps to setup the auto-provision device flow.
 
 ### Create a Device Provisioning Service
 
-When a new device is providioned using Device Provisioning Service, a new twin for that device can be created in Azure Digital Twins.
+When a new device is provisioned using Device Provisioning Service, a new twin for that device can be created in Azure Digital Twins.
 
 Create a Device Provisioning Service instance, which will be used to provision IoT devices. You can either use the Azure CLI instructions below, or use the Azure portal: [*Quickstart: Set up the IoT Hub Device Provisioning Service with the Azure portal*](../iot-dps/quick-setup-auto-provision).
 
@@ -191,8 +191,7 @@ namespace Samples.AdtIothub
             // Initialize the twin properties
             Dictionary<string, object> twinProps = new Dictionary<string, object>()
             {
-                { "$metadata", meta },
-                { "HubRegistrationId", regId }
+                { "$metadata", meta }
             };
             await client.CreateDigitalTwinAsync(dtId, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
             log.LogInformation($"Twin '{dtId}' created in DT");
@@ -234,7 +233,7 @@ Link the enrollment to the function you just created, by selecting the function 
 
 ### Setting up the device simulator
 
-This sample uses a device simulator that includes provisioning using the Device Provisioning Service. The device simulator is located here: [Azure Digital Twins and IoT Hub Integration Sample](https://github.com/Azure-Samples/digital-twins-iothub-integration/tree/main/device-simulator). Get the sample project on your machine by navigating to the sample link, and selecting the Download ZIP button underneath the title.
+This sample uses a device simulator that includes provisioning using the Device Provisioning Service. The device simulator is located here: [Azure Digital Twins and IoT Hub Integration Sample](https://github.com/Azure-Samples/digital-twins-iothub-integration/tree/main/device-simulator). Get the sample project on your machine by navigating to the sample link and selecting the Download ZIP button underneath the title.
 
 The device simulator is based on Node.js version 10.0.x or later. [Prepare your development environment](https://github.com/Azure/azure-iot-sdk-node/blob/master/doc/node-devbox-setup.md) describes how to install Node.js for this tutorial on either Windows or Linux. Go to the device-simulator directory and install the dependencies using the following command.
 ```cmd
@@ -282,7 +281,7 @@ Next are the process steps to setup the auto-retire device flow.
 
 ### Create an Event Hub
 
-You now need to create an Azure Event Hub, that will be used to receive the IoT Hub lifecycle events. Go through the steps descibed in the [Create an Event Hub](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create) quickstart. Reuse the resource group you created for the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)). Remember your event hub name and namespace. You will use this when you setup the lifecycle function and IoT Hub route in the next sections.
+You now need to create an Azure Event Hub, that will be used to receive the IoT Hub lifecycle events. Go through the steps described in the [Create an Event Hub](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create) quickstart. Reuse the resource group you created for the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)). Remember your event hub name and namespace. You will use this when you setup the lifecycle function and IoT Hub route in the next sections.
 
 ### Create an Azure Function
 
@@ -369,7 +368,7 @@ namespace Samples.AdtIothub
 
         public static async Task<string> GetTwinId(DigitalTwinsClient client, string regId, ILogger log)
         {
-            string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}'";
+            string query = $"SELECT * FROM DigitalTwins T WHERE T.$dtId = '{regId}'";
             AsyncPageable<string> twins = client.QueryAsync(query);
             await foreach (string twinJson in twins)
             {
@@ -422,7 +421,7 @@ az functionapp config appsettings set --settings "AdtAppId=<Application (client)
 
 ### Create an IoT Hub route for Lifecycle events
 
-Now you need to setup an IoT Hub route, to route device lifecycle events. In our case we are specifically listening to device delete events `if (opType == "deleteDeviceIdentity")`. This will trigger the delete of the digtal twin item, finalizing the retirement of a device and its digital twin.
+Now you need to setup an IoT Hub route, to route device lifecycle events. In our case we are specifically listening to device delete events `if (opType == "deleteDeviceIdentity")`. This will trigger the delete of the digital twin item, finalizing the retirement of a device and its digital twin.
 How to create an IoT Hub route is described in this article: [Use IoT Hub message routing to send device-to-cloud messages to different endpoints](../iot-hub/iot-hub-devguide-messages-d2c). The section 'Non-telemetry events' explains that you can use <b>device lifecycle events</b> as the data source for the route.
 
 The steps you need to go through for this setup are:
@@ -430,7 +429,7 @@ The steps you need to go through for this setup are:
 - Add a Device Lifecycle Events route. Use the endpoint created in the previous step. You can limit the device lifecycle events to only send the delete events by adding the routing query `opType='deleteDeviceIdentity'`.
     ![Add a route](media/lifecycle-route.png)
 
-Once you've gone through these steps everything is set to retire devices end-to-end.
+Once you gone through these steps everything is set to retire devices end-to-end.
 
 ### Validate
 
@@ -465,6 +464,8 @@ Finally, delete the project sample folder you downloaded from your local machine
 
 
 ## Next steps
+
+The above sample uses a direct mapping between registrationId (in Device Provisioning Service) to deviceId (in IoT Hub) to digital twin Id (in Azure Digital Twins). In the [Azure Digital Twins and IoT Hub Integration Sample](https://github.com/Azure-Samples/digital-twins-iothub-integration/tree/main/device-simulator), the twin model is extended with an additional HubRegistrationId property that is used too reverse lookup the original device from the twin. An additional AllocatedHub field in the twin can be added and filled in the allocation function to keep track of which device is registered in which IoT Hub. 
 
 The digital twins created for the devices are stored as a flat hierarchy in Azure Digital Twins, but they can be enriched with model information and a multi-level hierarchy for organization. To learn more about this concept, read: 
 
