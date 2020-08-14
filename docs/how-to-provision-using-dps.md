@@ -430,7 +430,7 @@ The steps you need to go through for this setup are:
 - Add a Device Lifecycle Events route. Use the endpoint created in the previous step. You can limit the device lifecycle events to only send the delete events by adding the routing query `opType='deleteDeviceIdentity'`.
     ![Add a route](media/lifecycle-route.png)
 
-Once you gone through these steps everything is set to retire devices end-to-end.
+Once you've gone through these steps everything is set to retire devices end-to-end.
 
 ### Validate
 
