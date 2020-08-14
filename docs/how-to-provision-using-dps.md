@@ -282,12 +282,11 @@ Next are the process steps to setup the auto-retire device flow.
 
 ### Create an Event Hub
 
-[todo]
+You now need to create an Azure Event Hub, that will be used to receive the IoT Hub lifecycle events. Go through the steps descibed in the [Create an Event Hub](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-create) quickstart. Reuse the resource group you created for the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)). Remember your event hub name and namespace. You will use this when you setup the lifecycle function and IoT Hub route in the next sections.
 
 ### Create an Azure Function
 
-
-Next, you'll create an Event Hubs-triggered function inside a function app. You can use the function app created in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)), or your own. 
+Next, you'll create an Event Hubs-triggered function inside a function app. You can use the function app created in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)), or your own. Name your event hub trigger 'lifecycleevents' and connect the event hub trigger to the Event Hub you created in the previous step.
 
 This function will use the IoT Hub Device Lifecycle Events to retire an existing device, see [IoT Hub Non-telemetry events](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-devguide-messages-d2c#non-telemetry-events). For more information about using Event Hubs with Azure functions, see [*Azure Event Hubs trigger for Azure Functions*](../azure-functions/functions-bindings-event-hubs-trigger.md).
 
@@ -406,9 +405,9 @@ namespace Samples.AdtIothub
 
 ### Configure your function
 
-Next, you'll need to set environment variables in your function app from earlier, containing the reference to the Azure Digital Twins instance you've created.
+Next, you'll need to set environment variables in your function app containing the reference to the Azure Digital Twins instance you've created.
 
-You will need the following values from when you set up your instance. 
+You will need the following values from when you set up your digital twin instance. 
 If you need to gather these values again, use the links below to the corresponding sections in the setup article for finding them in the [Azure portal](https://portal.azure.com).
 * Azure Digital Twins instance **_host name_** ([find in portal](../articles/digital-twins/how-to-set-up-instance-portal.md#verify-success-and-collect-important-values))
 * Azure AD app registration **_Application (client) ID_** ([find in portal](../articles/digital-twins/how-to-set-up-instance-portal.md#collect-important-values))
@@ -423,15 +422,47 @@ az functionapp config appsettings set --settings "AdtAppId=<Application (client)
 
 ### Create an IoT Hub route for Lifecycle events
 
-[todo]
+Now you need to setup an IoT Hub route, to route device lifecycle events. In our case we are specifically listening to device delete events `if (opType == "deleteDeviceIdentity")`. This will trigger the delete of the digtal twin item, finalizing the retirement of a device and its digital twin.
+How to create an IoT Hub route is described in this article: [Use IoT Hub message routing to send device-to-cloud messages to different endpoints](../iot-hub/iot-hub-devguide-messages-d2c). The section 'Non-telemetry events' explains that you can use <b>device lifecycle events</b> as the data source for the route.
+
+The steps you need to go through for this setup are:
+- Create a custom IoT Hub event hub endpoint. This endpoint should target the event hub you create in the 'Create an Event Hub' section.
+- Add a Device Lifecycle Events route. Use the endpoint created in the previous step. You can limit the device lifecycle events to only send the delete events by adding the routing query `opType='deleteDeviceIdentity'`.
+    ![Add a route](media/lifecycle-route.png)
+
+Once you gone through these steps everything is set to retire devices end-to-end.
 
 ### Validate
 
-[todo]
+To trigger the process of retirement you need to manually delete the device from IoT Hub. Use the process described in part one of this article to create a device and Twin instance. Then go to the IoT Hub and delete the device. The device will be automatically removed from Azure Digital Twins. Use the following command to verify the Twin of the device in the Azure Digital Twins instance was deleted.
 
-## Cleanup
+```azurecli-interactive
+az dt twin show -n <Digital Twins instance name> --twin-id <Device Registration ID>"
+```
 
-[todo]
+The output should tell you the twin-id doesn't exist.
+
+## Clean up resources
+
+If you no longer need the resources created in this article, follow these steps to delete them. 
+
+Using the Azure Cloud Shell, you can delete all Azure resources in a resource group with the [az group delete](https://docs.microsoft.com/cli/azure/group?view=azure-cli-latest#az-group-delete) command. This removes the resource group; the Azure Digital Twins instance; the IoT hub and the hub device registration; the event grid topic and associated subscriptions; and both Azure Functions apps, including associated resources like storage.
+
+> [!IMPORTANT]
+> Deleting a resource group is irreversible. The resource group and all the resources contained in it are permanently deleted. Make sure that you do not accidentally delete the wrong resource group or resources. 
+
+```azurecli-interactive
+az group delete --name <your-resource-group>
+```
+
+Next, delete the Azure AD app registration you created for your client app with this command:
+
+```azurecli
+az ad app delete --id <your-application-ID>
+```
+
+Finally, delete the project sample folder you downloaded from your local machine.
+
 
 ## Next steps
 
