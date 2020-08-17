@@ -33,6 +33,10 @@ The image below illustrates both the device provision and retire flow.
 
 ![A view of Azure services in an end-to-end scenario, highlighting Device Provisioning Service](media/flows.png)
 
+For clarity reasons we have divided the explantion into two steps:
+- [Auto-provision device using Device Provisioning Service](./how-to-provision-using-dps.md#auto-provision-device-using-device-provisioning-service)
+- [Auto-retire device using IoT Hub Lifecycle events](./how-to-provision-using-dps.md#auto-retire-device-using-iot-hub-lifecycle-events)
+
 ## Auto-provision device using Device Provisioning Service
 
 You will be attaching Device Provisioning Service to Azure Digital Twins to auto-provision devices through the path below.
