@@ -1,4 +1,24 @@
-# Azure Digital Twin and IoT Hub Integration Sample
+---
+page_type: sample
+languages:
+- csharp
+- nodejs
+products:
+- dotnet-core
+- azure
+- azure-iot
+- azure-iot-dps
+- azure-iot-hub
+- azure-digital-twins
+- azure-functions
+- azure-event-hubs
+- vs-code
+name: Azure Digital Twins and IoT Hub provisioning integration sample
+description: A code sample to use the Device Provisioning Service and IoT Hub to automatically create and remove devices in Azure Digital Twins.
+urlFragment: adt-iothub-provision-sample
+---
+
+# Azure Digital Twin and IoT Hub provisioning integration sample
 
 This is a sample project to show possible patterns for the automatic integration of the new Azure Digital Twins and IoT Hub. The following scenarios are implemented:
 
