@@ -5,7 +5,7 @@ titleSuffix: Azure Digital Twins
 description: See how to set up automated process to provision and retire IoT devices in Azure Digital Twins using Device Provisioning Service.
 author: michielvanschaik
 ms.author: mivansch # Microsoft employees only
-ms.date: 8/13/2020
+ms.date: 8/27/2020
 ms.topic: how-to
 ms.service: digital-twins
 
@@ -28,6 +28,14 @@ For more information about the _provision_ and _retire_ stages, and to better un
 Before you can set up the provisioning, you need to have an **Azure Digital Twins instance**.
 
 If you do not have this set up already, you can create it by following the Azure Digital Twins [*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md). The tutorial will walk you through setting up an Azure Digital Twins instance and a connected Azure IoT Hub.
+
+You will need the following values in the rest of this article from the step you just completed. If you need to gather these values again, use the links below to the corresponding sections in the setup article for finding them in the [Azure portal](https://portal.azure.com).
+* Azure Digital Twins instance **_host name_** ([find in portal](how-to-set-up-instance-portal.md#verify-success-and-collect-important-values))
+* Azure Event Hubs connection string **_connection string_** ([find in portal](../event-hubs/event-hubs-get-connection-string#get-connection-string-from-the-portal))
+
+This sample uses a device simulator that includes provisioning using the Device Provisioning Service. The device simulator is located here: [Azure Digital Twins and IoT Hub Integration Sample](https://docs.microsoft.com/samples/azure-samples/digital-twins-iothub-integration/adt-iothub-provision-sample/). Get the sample project on your machine by navigating to the sample link and selecting the *Download ZIP* button underneath the title. Unzip the downloaded folder.
+
+The device simulator is based on Node.js, version 10.0.x or later. [*Prepare your development environment*](https://github.com/Azure/azure-iot-sdk-node/blob/master/doc/node-devbox-setup.md) describes how to install Node.js for this tutorial on either Windows or Linux.
 
 ## Solution architecture
 
@@ -226,11 +234,7 @@ Save the file and then re-publish your function app. For instructions on publish
 
 ### Configure your function
 
-Next, you'll need to set environment variables in your function app from earlier, containing the reference to the Azure Digital Twins instance you've created.
-
-If you used the the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)), your settings will already be configured.
-
-To set up the environment variable, you will need the Azure Digital Twins instance's **_host name_** from when you set up your instance. If you need to gather this value again, use [these instructions](how-to-set-up-instance-portal.md#verify-success-and-collect-important-values) from the setup article for finding them in the [Azure portal](https://portal.azure.com).
+Next, you'll need to set environment variables in your function app from earlier, containing the reference to the Azure Digital Twins instance you've created. If you used the the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)) the setting will already be configured.
 
 Add the setting with this command:
 
@@ -238,7 +242,7 @@ Add the setting with this command:
 az functionapp config appsettings set --settings "ADT_SERVICE_URL=https://<Azure Digital Twins instance _host name_>" -g <resource group> -n <your App Service (function app) name>
 ```
 
-Additionally, review the section *Assign permissions to the function app* in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end#assign-permissions-to-the-function-app)) for configuring function app permissions, and role assignment with Managed Identity.
+Ensure that the permissions and Managed Identity role assignment are configured correctly for the function app, as described in the section *Assign permissions to the function app* in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end#assign-permissions-to-the-function-app)).
 
 <!-- 
 * Azure AD app registration **_Application (client) ID_** ([find in portal](../articles/digital-twins/how-to-set-up-instance-portal.md#collect-important-values))
@@ -256,8 +260,6 @@ Link the enrollment to the function you just created, by selecting the function 
 ### Setting up the device simulator
 
 This sample uses a device simulator that includes provisioning using the Device Provisioning Service. The device simulator is located here: [Azure Digital Twins and IoT Hub Integration Sample](https://docs.microsoft.com/samples/azure-samples/digital-twins-iothub-integration/adt-iothub-provision-sample/). Get the sample project on your machine by navigating to the sample link and selecting the *Download ZIP* button underneath the title. Unzip the downloaded folder.
-
-The device simulator is based on Node.js, version 10.0.x or later. [*Prepare your development environment*](https://github.com/Azure/azure-iot-sdk-node/blob/master/doc/node-devbox-setup.md) describes how to install Node.js for this tutorial on either Windows or Linux.
 
 In the downloaded folder, navigate to the *device-simulator* directory in a command window. Install the dependencies for the project using the following command:
 
@@ -286,7 +288,7 @@ node .\adt_custom_register.js
 ```
 
 You should see the device being registered and connected to IoT Hub, and then starting to send messages.
-![](media/output.png)
+![Command window showing device registration and sending messages](media/output.png)
 
 ### Validate
 
@@ -295,6 +297,9 @@ The device will be automatically registered in Azure Digital Twins. Using the fo
 ```azurecli-interactive
 az dt twin show -n <Digital Twins instance name> --twin-id <Device Registration ID>"
 ```
+
+You should see the twin of the device being found in the Azure Digital Twins instance.
+![Command window showing newly created twin](media/show-provisioned-twin.png)
 
 ## Auto-retire device using IoT Hub Lifecycle events
 
@@ -443,11 +448,6 @@ Save the project, then publish the function app again. For instructions on publi
 
 Next, you'll need to set environment variables in your function app from earlier, containing the reference to the Azure Digital Twins instance you've created and the event hub. If you used the the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end.md)) the first setting will already be configured.
 
-You will need the following values from when you set up your instance.
-If you need to gather these values again, use the links below to the corresponding sections in the setup article for finding them in the [Azure portal](https://portal.azure.com).
-* Azure Digital Twins instance **_host name_** ([find in portal](how-to-set-up-instance-portal.md#verify-success-and-collect-important-values))
-* Azure Event Hubs connection string **_connection string_** ([find in portal](../event-hubs/event-hubs-get-connection-string#get-connection-string-from-the-portal))
-
 Add the setting with this command:
 
 ```azurecli-interactive
@@ -460,7 +460,7 @@ Next, you will need to configure the function environment variable for connectin
 az functionapp config appsettings set --settings "EVENTHUB_CONNECTIONSTRING=<Event Hubs SAS connection string Listen>" -g <resource group> -n <your App Service (function app) name>
 ```
 
-Additionally, review the section *Assign permissions to the function app* in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end#assign-permissions-to-the-function-app)) for configuring function app permissions and role assignment with Managed Identity.
+Ensure that the permissions and Managed Identity role assignment are configured correctly for the function app, as described in the section *Assign permissions to the function app* in the end-to-end tutorial ([*Tutorial: Connect an end-to-end solution*](./tutorial-end-to-end#assign-permissions-to-the-function-app)).
 
 ### Create an IoT Hub route for Lifecycle events
 
@@ -489,13 +489,8 @@ Use the following command to verify the Twin of the device in the Azure Digital 
 az dt twin show -n <Digital Twins instance name> --twin-id <Device Registration ID>"
 ```
 
-The output should tell you the twin-id doesn't exist.
-
-## Mapping ID values
-
-The above sample uses a direct mapping between `registrationId` (in Device Provisioning Service) to `deviceId` (in IoT Hub) to `digital twin Id` (in Azure Digital Twins).
-
-In this sample, the twin model is extended with an additional `HubRegistrationId` property that is used to reverse-lookup the original device from the twin. An additional `AllocatedHub` field in the twin can be added and filled in the allocation function to keep track of which device is registered in which IoT Hub.
+You should see that the twin of the device cannot be found in the Azure Digital Twins instance anymore.
+![Command window showing twin not found](media/show-retired-twin.png)
 
 ## Clean up resources
 
