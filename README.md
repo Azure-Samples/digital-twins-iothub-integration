@@ -47,8 +47,7 @@ This is a sample project to show possible patterns for the automatic integration
   * `cd functions`
   * `dotnet restore`
 * Deploy the application to your Azure Functions. Set the following configuration app settings:
-  - `AdtAppId`
-  - `AdtInstanceUrl`
+  - `ADT_SERVICE_URL`
   - `EVENTHUB_CONNECTIONSTRING`
 * Create a Group Enrollment in DPS and link to the `DpsAdtAllocationFunc` in your functions instance.
 * Customise the device simulator .env file with the credentials for your DPS Scope.
