@@ -24,14 +24,18 @@ namespace Samples.AdtIothub
 {
     public static class DpsAdtAllocationFunc
     {
-        private static string adtAppId = System.Environment.GetEnvironmentVariable("AdtAppId", EnvironmentVariableTarget.Process);
-        private static readonly string adtInstanceUrl = System.Environment.GetEnvironmentVariable("AdtInstanceUrl", EnvironmentVariableTarget.Process);
+        private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
         private static readonly HttpClient httpClient = new HttpClient();
 
         [FunctionName("DpsAdtAllocationFunc")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
         {
+            // After this is deployed, you need to turn the Managed Identity Status to "On",
+            // Grab Object Id of the function and assigned "Azure Digital Twins Owner (Preview)" role
+            // to this function identity in order for this function to be authorized on ADT APIs.
+            if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
+
             // Get request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             log.LogDebug($"Request.Body: {requestBody}");
@@ -97,7 +101,7 @@ namespace Samples.AdtIothub
         public static async Task<string> FindOrCreateTwin(string dtmi, string regId, ILogger log)
         {
             // Create Digital Twin client
-            var cred = new ManagedIdentityCredential(adtAppId);
+            var cred = new ManagedIdentityCredential("https://digitaltwins.azure.net");
             var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred, new DigitalTwinsClientOptions { Transport = new HttpClientTransport(httpClient) });
 
             // Find existing twin with registration ID

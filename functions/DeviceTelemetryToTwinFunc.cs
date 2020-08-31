@@ -21,8 +21,7 @@ namespace Samples.AdtIothub
 {
     public static class DeviceTelemetryToTwinFunc
     {
-        private static string adtAppId = System.Environment.GetEnvironmentVariable("AdtAppId", EnvironmentVariableTarget.Process);
-        private static readonly string adtInstanceUrl = System.Environment.GetEnvironmentVariable("AdtInstanceUrl", EnvironmentVariableTarget.Process);
+        private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
         private static readonly HttpClient httpClient = new HttpClient();
 
 
@@ -30,6 +29,11 @@ namespace Samples.AdtIothub
         public static async Task Run(
             [EventHubTrigger("deviceevents", Connection = "EVENTHUB_CONNECTIONSTRING")] EventData[] events, ILogger log)
         {
+            // After this is deployed, you need to turn the Managed Identity Status to "On",
+            // Grab Object Id of the function and assigned "Azure Digital Twins Owner (Preview)" role
+            // to this function identity in order for this function to be authorized on ADT APIs.
+            if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
+
             var exceptions = new List<Exception>();
 
             foreach (EventData eventData in events)
@@ -40,7 +44,7 @@ namespace Samples.AdtIothub
                     string messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
 
                     // Create Digital Twin client
-                    var cred = new ManagedIdentityCredential(adtAppId);
+                    var cred = new ManagedIdentityCredential("https://digitaltwins.azure.net");
                     var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred, new DigitalTwinsClientOptions { Transport = new HttpClientTransport(httpClient) });
 
                     // Reading Device ID from message headers
