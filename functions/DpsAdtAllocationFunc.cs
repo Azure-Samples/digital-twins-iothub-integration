@@ -107,7 +107,7 @@ namespace Samples.AdtIothub
             // Find existing twin with registration ID
             string dtId;
             string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}' AND IS_OF_MODEL('{dtmi}')";
-            AsyncPageable<string> twins = client.QueryAsync(query);
+            AsyncPageable<string> twins = client.QueryAsync<string>(query);
             await foreach (string twinJson in twins)
             {
                 // Get DT ID from the Twin
@@ -131,7 +131,7 @@ namespace Samples.AdtIothub
                 { "$metadata", meta },
                 { "HubRegistrationId", regId }
             };
-            await client.CreateDigitalTwinAsync(dtId, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
+            await client.CreateOrReplaceDigitalTwinAsync(dtId, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
             log.LogInformation($"Twin '{dtId}' created in DT");
 
             return dtId;

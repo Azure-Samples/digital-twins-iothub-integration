@@ -82,7 +82,7 @@ namespace Samples.AdtIothub
         public static async Task<string> GetTwinId(DigitalTwinsClient client, string regId, ILogger log)
         {
             string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}'";
-            AsyncPageable<string> twins = client.QueryAsync(query);
+            AsyncPageable<string> twins = client.QueryAsync<string>(query);
             await foreach (string twinJson in twins)
             {
                 JObject twin = (JObject)JsonConvert.DeserializeObject(twinJson);
@@ -98,7 +98,7 @@ namespace Samples.AdtIothub
         {
             var relationshipIds = new List<string>();
 
-            AsyncPageable<string> relationships = client.GetRelationshipsAsync(dtId);
+            AsyncPageable<string> relationships = client.GetRelationshipsAsync<string>(dtId);
             await foreach (var relationshipJson in relationships)
             {
                 BasicRelationship relationship = System.Text.Json.JsonSerializer.Deserialize<BasicRelationship>(relationshipJson);

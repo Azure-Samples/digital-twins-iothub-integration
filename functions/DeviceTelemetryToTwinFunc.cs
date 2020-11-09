@@ -7,9 +7,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Core.Pipeline;
 using Azure.DigitalTwins.Core;
-using Azure.DigitalTwins.Core.Serialization;
 using Azure.Identity;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
@@ -57,9 +57,9 @@ namespace Samples.AdtIothub
                     double temperature = Convert.ToDouble(jbody["Temperature"].ToString());
 
                     // Update device Temperature property
-                    UpdateOperationsUtility uou = new UpdateOperationsUtility();
-                    uou.AppendAddOp("/Temperature", temperature);
-                    await client.UpdateDigitalTwinAsync(dtId, uou.Serialize());
+                    var updateTwinData = new JsonPatchDocument();
+                    updateTwinData.AppendReplace("/Temperature", temperature);
+                    await client.UpdateDigitalTwinAsync(dtId, updateTwinData);
                     log.LogInformation($"Updated Temperature of device Twin '{dtId}' to: {temperature}");
                 }
                 catch (Exception e)
