@@ -3,29 +3,29 @@
 
 using System;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Core.Pipeline;
+using Azure.DigitalTwins.Core;
+using Azure.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Azure.Devices.Provisioning.Service;
-using System.Net.Http;
-using Azure.Identity;
-using Azure.DigitalTwins.Core;
-using Azure.Core.Pipeline;
-using Azure;
-using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Samples.AdtIothub
 {
     public static class DpsAdtAllocationFunc
     {
-        private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
-        private static readonly HttpClient httpClient = new HttpClient();
+        private const string adtAppId = "https://digitaltwins.azure.net";
+        private static string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
+        private static readonly HttpClient singletonHttpClientInstance = new HttpClient();
 
         [FunctionName("DpsAdtAllocationFunc")]
         public static async Task<IActionResult> Run(
@@ -46,9 +46,9 @@ namespace Samples.AdtIothub
 
             bool fail = false;
             string message = "Uncaught error";
-            ResponseObj obj = new ResponseObj();
+            var response = new ResponseObj();
 
-            // Must have unique registration ID on DPS request 
+            // Must have unique registration ID on DPS request
             if (regId == null)
             {
                 message = "Registration ID not provided for the device.";
@@ -60,7 +60,8 @@ namespace Samples.AdtIothub
                 string[] hubs = data?.linkedHubs.ToObject<string[]>();
 
                 // Must have hubs selected on the enrollment
-                if (hubs == null)
+                if (hubs == null
+                    || hubs.Length < 1)
                 {
                     message = "No hub group defined for the enrollment.";
                     log.LogInformation("linkedHubs: NULL");
@@ -72,72 +73,92 @@ namespace Samples.AdtIothub
                     dynamic payloadContext = data?.deviceRuntimeContext?.payload;
                     string dtmi = payloadContext.modelId;
                     log.LogDebug($"payload.modelId: {dtmi}");
-                    string dtId = await FindOrCreateTwin(dtmi, regId, log);
+                    string dtId = await FindOrCreateTwinAsync(dtmi, regId, log);
 
                     // Get first linked hub (TODO: select one of the linked hubs based on policy)
-                    obj.iotHubHostName = hubs[0];
+                    response.iotHubHostName = hubs[0];
 
                     // Specify the initial tags for the device.
-                    TwinCollection tags = new TwinCollection();
+                    var tags = new TwinCollection();
                     tags["dtmi"] = dtmi;
                     tags["dtId"] = dtId;
 
                     // Specify the initial desired properties for the device.
-                    TwinCollection properties = new TwinCollection();
+                    var properties = new TwinCollection();
 
                     // Add the initial twin state to the response.
-                    TwinState twinState = new TwinState(tags, properties);
-                    obj.initialTwin = twinState;
+                    var twinState = new TwinState(tags, properties);
+                    response.initialTwin = twinState;
                 }
             }
 
-            log.LogDebug("Response: " + ((obj.iotHubHostName != null) ? JsonConvert.SerializeObject(obj) : message));
+            log.LogDebug("Response: " + ((response.iotHubHostName != null)? JsonConvert.SerializeObject(response) : message));
 
-            return (fail)
+            return fail
                 ? new BadRequestObjectResult(message)
-                : (ActionResult)new OkObjectResult(obj);
+                : (ActionResult)new OkObjectResult(response);
         }
 
-        public static async Task<string> FindOrCreateTwin(string dtmi, string regId, ILogger log)
+        public static async Task<string> FindOrCreateTwinAsync(string dtmi, string regId, ILogger log)
         {
-            // Create Digital Twin client
-            var cred = new ManagedIdentityCredential("https://digitaltwins.azure.net");
-            var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred, new DigitalTwinsClientOptions { Transport = new HttpClientTransport(httpClient) });
+            // Create Digital Twins client
+            var cred = new ManagedIdentityCredential(adtAppId);
+            var client = new DigitalTwinsClient(
+                new Uri(adtInstanceUrl),
+                cred,
+                new DigitalTwinsClientOptions
+                {
+                    Transport = new HttpClientTransport(singletonHttpClientInstance)
+                });
 
-            // Find existing twin with registration ID
-            string dtId;
-            string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}' AND IS_OF_MODEL('{dtmi}')";
-            AsyncPageable<string> twins = client.QueryAsync<string>(query);
-            await foreach (string twinJson in twins)
+            // Find existing DigitalTwin with registration ID
+            try
             {
-                // Get DT ID from the Twin
-                JObject twin = (JObject)JsonConvert.DeserializeObject(twinJson);
-                dtId = (string)twin["$dtId"];
-                log.LogInformation($"Twin '{dtId}' with Registration ID '{regId}' found in DT");
-                return dtId;
+                // Get DigitalTwin with Id 'regId'
+                BasicDigitalTwin existingDt = await client.GetDigitalTwinAsync<BasicDigitalTwin>(regId).ConfigureAwait(false);
+
+                // Check to make sure it is of model type 'dtmi'
+                if (StringComparer.OrdinalIgnoreCase.Equals(dtmi, existingDt.Metadata.ModelId))
+                {
+                    log.LogInformation($"DigitalTwin {existingDt.Id} already exists");
+                    return existingDt.Id;
+                }
+
+                // Found DigitalTwin with 'regId' but it is not of model type 'dtmi'
+                log.LogInformation($"Found DigitalTwin {existingDt.Id} but it is not of model {dtmi}");
+            }
+            catch(RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
+            {
+                log.LogDebug($"Did not find DigitalTwin {regId}");
             }
 
-            // Not found, so create new twin
-            dtId = regId; // use the Registration ID as the DT ID
+            // Either the DigitalTwin was not found, or we found it but it is of a different model type
+            // Create or replace it with what it needs to be. Meaning if it was not found a brand new DigitalTwin will be created
+            // and if it was of a different model, it will be replace that existing DigitalTwin
+            // If it was intended to only create the DigitalTwin if there is no matching DigitalTwin with the same Id,
+            // ETag.All would have been used as the ifNonMatch parameter to the CreateOrReplaceDigitalTwinAsync method call.
+            // Read more in the CreateOrReplaceDigitalTwinAsync documentation here:
+            // https://docs.microsoft.com/en-us/dotnet/api/azure.digitaltwins.core.digitaltwinsclient.createorreplacedigitaltwinasync?view=azure-dotnet
+            BasicDigitalTwin dt = await client.CreateOrReplaceDigitalTwinAsync(
+                regId, 
+                new BasicDigitalTwin
+                {
+                    Metadata = { ModelId = dtmi },
+                    Contents = 
+                    {
+                        { "Temperature", 0.0 }
+                    }
+                }
+            ).ConfigureAwait(false);
 
-            // Define the model type for the twin to be created
-            Dictionary<string, object> meta = new Dictionary<string, object>()
-            {
-                { "$model", dtmi }
-            };
-            // Initialize the twin properties
-            Dictionary<string, object> twinProps = new Dictionary<string, object>()
-            {
-                { "$metadata", meta },
-                { "HubRegistrationId", regId }
-            };
-            await client.CreateOrReplaceDigitalTwinAsync(dtId, System.Text.Json.JsonSerializer.Serialize<Dictionary<string, object>>(twinProps));
-            log.LogInformation($"Twin '{dtId}' created in DT");
-
-            return dtId;
+            log.LogInformation($"Digital Twin {dt.Id} created.");
+            return dt.Id;
         }
     }
 
+    /// <summary>
+    /// Expected function result format
+    /// </summary>
     public class ResponseObj
     {
         public string iotHubHostName { get; set; }

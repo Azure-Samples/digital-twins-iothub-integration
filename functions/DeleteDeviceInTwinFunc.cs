@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Azure;
@@ -21,8 +22,9 @@ namespace Samples.AdtIothub
 {
     public static class DeleteDeviceInTwinFunc
     {
-        private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
-        private static readonly HttpClient httpClient = new HttpClient();
+        private static string adtAppId = "https://digitaltwins.azure.net";
+        private static readonly string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL", EnvironmentVariableTarget.Process);
+        private static readonly HttpClient singletonHttpClientInstance = new HttpClient();
 
         [FunctionName("DeleteDeviceInTwinFunc")]
         public static async Task Run(
@@ -33,34 +35,44 @@ namespace Samples.AdtIothub
             // to this function identity in order for this function to be authorized on ADT APIs.
             if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
 
-            var exceptions = new List<Exception>();
+            var exceptions = new List<Exception>(events.Length);
+
+            // Create Digital Twin client
+            var cred = new ManagedIdentityCredential(adtAppId);
+            var client = new DigitalTwinsClient(
+                new Uri(adtInstanceUrl),
+                cred,
+                new DigitalTwinsClientOptions
+                {
+                    Transport = new HttpClientTransport(singletonHttpClientInstance)
+                });
 
             foreach (EventData eventData in events)
             {
                 try
                 {
-                    //log.LogDebug($"EventData: {System.Text.Json.JsonSerializer.Serialize(eventData)}");
+                    log.LogDebug($"EventData: {System.Text.Json.JsonSerializer.Serialize(eventData)}");
 
                     string opType = eventData.Properties["opType"] as string;
                     if (opType == "deleteDeviceIdentity")
                     {
                         string deviceId = eventData.Properties["deviceId"] as string;
-                        //string dtId = eventData.Properties["dtId"] as string; // enriched property not available in 'delete' event
 
-                        // Create Digital Twin client
-                        var cred = new ManagedIdentityCredential("https://digitaltwins.azure.net");
-                        var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred, new DigitalTwinsClientOptions { Transport = new HttpClientTransport(httpClient) });
-
-                        // Find twin based on the original Regitration ID
-                        string regID = deviceId; // simple mapping
-                        string dtId = await GetTwinId(client, regID, log);
-                        if (dtId != null)
+                        try
                         {
-                            await DeleteRelationships(client, dtId, log);
+                            // Find twin based on the original Registration ID
+                            BasicDigitalTwin digitalTwin = await client.GetDigitalTwinAsync<BasicDigitalTwin>(deviceId);
 
-                            // Delete twin
-                            await client.DeleteDigitalTwinAsync(dtId);
-                            log.LogInformation($"Twin '{dtId}' deleted in DT");
+                            // In order to delete the twin, all relationships must first be removed
+                            await DeleteAllRelationshipsAsync(client, digitalTwin.Id, log);
+
+                            // Delete the twin
+                            await client.DeleteDigitalTwinAsync(digitalTwin.Id, digitalTwin.ETag);
+                            log.LogInformation($"Twin {digitalTwin.Id} deleted in DT");
+                        }
+                        catch (RequestFailedException e) when (e.Status == (int)HttpStatusCode.NotFound)
+                        {
+                            log.LogWarning($"Twin {deviceId} not found in DT");
                         }
                     }
                 }
@@ -78,37 +90,23 @@ namespace Samples.AdtIothub
                 throw exceptions.Single();
         }
 
-
-        public static async Task<string> GetTwinId(DigitalTwinsClient client, string regId, ILogger log)
+        /// <summary>
+        /// Deletes all outgoing and incoming relationships from a specified digital twin
+        /// </summary>
+        public static async Task DeleteAllRelationshipsAsync(DigitalTwinsClient client, string dtId, ILogger log)
         {
-            string query = $"SELECT * FROM DigitalTwins T WHERE T.HubRegistrationId = '{regId}'";
-            AsyncPageable<string> twins = client.QueryAsync<string>(query);
-            await foreach (string twinJson in twins)
+            AsyncPageable<BasicRelationship> relationships = client.GetRelationshipsAsync<BasicRelationship>(dtId);
+            await foreach (BasicRelationship relationship in relationships)
             {
-                JObject twin = (JObject)JsonConvert.DeserializeObject(twinJson);
-                string dtId = (string)twin["$dtId"];
-                log.LogInformation($"Twin '{dtId}' found in DT");
-                return dtId;
+                await client.DeleteRelationshipAsync(dtId, relationship.Id, relationship.ETag);
+                log.LogInformation($"Twin {dtId} relationship {relationship.Id} deleted in DT");
             }
 
-            return null;
-        }
-
-        public static async Task DeleteRelationships(DigitalTwinsClient client, string dtId, ILogger log)
-        {
-            var relationshipIds = new List<string>();
-
-            AsyncPageable<string> relationships = client.GetRelationshipsAsync<string>(dtId);
-            await foreach (var relationshipJson in relationships)
+            AsyncPageable<IncomingRelationship> incomingRelationships = client.GetIncomingRelationshipsAsync(dtId);
+            await foreach (IncomingRelationship incomingRelationship in incomingRelationships)
             {
-                BasicRelationship relationship = System.Text.Json.JsonSerializer.Deserialize<BasicRelationship>(relationshipJson);
-                relationshipIds.Add(relationship.Id);
-            }
-
-            foreach(var relationshipId in relationshipIds)
-            {
-                client.DeleteRelationship(dtId, relationshipId);
-                log.LogInformation($"Twin '{dtId}' relationship '{relationshipId}' deleted in DT");
+                await client.DeleteRelationshipAsync(incomingRelationship.SourceId, incomingRelationship.RelationshipId);
+                log.LogInformation($"Twin {dtId} incoming relationship {incomingRelationship.RelationshipId} from {incomingRelationship.SourceId} deleted in DT");
             }
         }
     }
