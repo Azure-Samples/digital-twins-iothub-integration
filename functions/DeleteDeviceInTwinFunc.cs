@@ -10,13 +10,10 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Core.Pipeline;
 using Azure.DigitalTwins.Core;
-using Azure.DigitalTwins.Core.Serialization;
 using Azure.Identity;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Samples.AdtIothub
 {
@@ -30,11 +27,6 @@ namespace Samples.AdtIothub
         public static async Task Run(
             [EventHubTrigger("lifecycleevents", Connection = "EVENTHUB_CONNECTIONSTRING")] EventData[] events, ILogger log)
         {
-            // After this is deployed, you need to turn the Managed Identity Status to "On",
-            // Grab Object Id of the function and assigned "Azure Digital Twins Owner (Preview)" role
-            // to this function identity in order for this function to be authorized on ADT APIs.
-            if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
-
             var exceptions = new List<Exception>(events.Length);
 
             // Create Digital Twin client
@@ -51,7 +43,7 @@ namespace Samples.AdtIothub
             {
                 try
                 {
-                    log.LogDebug($"EventData: {System.Text.Json.JsonSerializer.Serialize(eventData)}");
+                    //log.LogDebug($"EventData: {System.Text.Json.JsonSerializer.Serialize(eventData)}");
 
                     string opType = eventData.Properties["opType"] as string;
                     if (opType == "deleteDeviceIdentity")
