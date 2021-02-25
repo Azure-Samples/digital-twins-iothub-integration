@@ -29,11 +29,6 @@ namespace Samples.AdtIothub
         public static async Task Run(
             [EventHubTrigger("deviceevents", Connection = "EVENTHUB_CONNECTIONSTRING")] EventData[] events, ILogger log)
         {
-            // After this is deployed, you need to turn the Managed Identity Status to "On",
-            // Grab Object Id of the function and assigned "Azure Digital Twins Owner (Preview)" role
-            // to this function identity in order for this function to be authorized on ADT APIs.
-            if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
-
             var exceptions = new List<Exception>(events.Length);
 
             // Create Digital Twin client

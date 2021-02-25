@@ -31,11 +31,6 @@ namespace Samples.AdtIothub
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log)
         {
-            // After this is deployed, you need to turn the Managed Identity Status to "On",
-            // Grab Object Id of the function and assigned "Azure Digital Twins Owner (Preview)" role
-            // to this function identity in order for this function to be authorized on ADT APIs.
-            if (adtInstanceUrl == null) log.LogError("Application setting \"ADT_SERVICE_URL\" not set");
-
             // Get request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             log.LogDebug($"Request.Body: {requestBody}");
@@ -117,14 +112,14 @@ namespace Samples.AdtIothub
                 // Get DigitalTwin with Id 'regId'
                 BasicDigitalTwin existingDt = await client.GetDigitalTwinAsync<BasicDigitalTwin>(regId).ConfigureAwait(false);
 
-                // Check to make sure it is of model type 'dtmi'
+                // Check to make sure it is of the correct model type
                 if (StringComparer.OrdinalIgnoreCase.Equals(dtmi, existingDt.Metadata.ModelId))
                 {
                     log.LogInformation($"DigitalTwin {existingDt.Id} already exists");
                     return existingDt.Id;
                 }
 
-                // Found DigitalTwin with 'regId' but it is not of model type 'dtmi'
+                // Found DigitalTwin but it is not of the correct model type
                 log.LogInformation($"Found DigitalTwin {existingDt.Id} but it is not of model {dtmi}");
             }
             catch(RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
@@ -133,10 +128,10 @@ namespace Samples.AdtIothub
             }
 
             // Either the DigitalTwin was not found, or we found it but it is of a different model type
-            // Create or replace it with what it needs to be. Meaning if it was not found a brand new DigitalTwin will be created
-            // and if it was of a different model, it will be replace that existing DigitalTwin
+            // Create or replace it with what it needs to be, meaning if it was not found a brand new DigitalTwin will be created
+            // and if it was of a different model, it will replace that existing DigitalTwin
             // If it was intended to only create the DigitalTwin if there is no matching DigitalTwin with the same Id,
-            // ETag.All would have been used as the ifNonMatch parameter to the CreateOrReplaceDigitalTwinAsync method call.
+            // ETag.All could have been used as the ifNonMatch parameter to the CreateOrReplaceDigitalTwinAsync method call.
             // Read more in the CreateOrReplaceDigitalTwinAsync documentation here:
             // https://docs.microsoft.com/en-us/dotnet/api/azure.digitaltwins.core.digitaltwinsclient.createorreplacedigitaltwinasync?view=azure-dotnet
             BasicDigitalTwin dt = await client.CreateOrReplaceDigitalTwinAsync(
