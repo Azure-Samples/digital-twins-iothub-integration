@@ -91,15 +91,17 @@ provisioningClient.register(function(err, result) {
         console.error('Could not connect: ' + err.message);
       } else {
         console.log('Client connected');
-      // start event data send routing
-      var sendInterval = setInterval(function () {
-        var data = JSON.stringify({
-          'Temperature': generateRandom(temperature)
-        });
+        // start event data send routing
+        var sendInterval = setInterval(function () {
+          var message = new Message(JSON.stringify({
+            'Temperature': generateRandom(temperature)
+          }));
+          message.ContentEncoding = "utf-8"; 
+          message.ContentType = "application/json";
 
-        console.log('Sending device event data:\n' + data);
-        hubClient.sendEvent(new Message(data), printErrorFor('send event'));
-      }, 500);
+          console.log('Sending device event data:\n' + message.data);
+          hubClient.sendEvent(message, printErrorFor('send event'));
+        }, 500);
       }
     });
   }
