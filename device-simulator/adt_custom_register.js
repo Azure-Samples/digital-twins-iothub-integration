@@ -96,8 +96,8 @@ provisioningClient.register(function(err, result) {
           var message = new Message(JSON.stringify({
             'Temperature': generateRandom(temperature)
           }));
-          message.ContentEncoding = "utf-8"; 
-          message.ContentType = "application/json";
+          message.contentEncoding = "utf-8";
+          message.contentType = "application/json";
 
           console.log('Sending device event data:\n' + message.data);
           hubClient.sendEvent(message, printErrorFor('send event'));
