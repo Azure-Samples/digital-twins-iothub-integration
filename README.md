@@ -110,5 +110,4 @@ Note: we assume Azure Digital Twins has been setup with the models supplied in t
 8. Azure Function `DeviceTelemetryToTwinFunc` consumes from the Event Hub, picks up each message and updates the Twin instance Id in ADT. For this example, we update the `Temperature' Property in the Twin.
 9. A manual action can be taken to delete the Device from IoT Hub. 
 10. In this case, we also want to delete the Twin instance for that device in ADT. To do this we create a Route in IoT Hub to send all 'Lifecycle events' to another Event Hub. Function `DeleteDeviceInTwinFunc` consumes the event hub.
-11. If the operation is of type `deleteDeviceIdentity`, we use ADT API to find the Twin instance to be deleted.
-
+11. If the operation is of type `deleteDeviceIdentity`, we use ADT API to find the Twin instance to be deleted. 
