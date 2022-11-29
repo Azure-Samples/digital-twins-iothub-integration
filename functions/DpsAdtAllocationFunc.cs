@@ -23,7 +23,6 @@ namespace Samples.AdtIothub
 {
     public static class DpsAdtAllocationFunc
     {
-        private const string adtAppId = "https://digitaltwins.azure.net";
         private static string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
         private static readonly HttpClient singletonHttpClientInstance = new HttpClient();
 
