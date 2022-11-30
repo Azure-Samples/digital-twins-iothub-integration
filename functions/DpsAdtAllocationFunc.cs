@@ -23,7 +23,6 @@ namespace Samples.AdtIothub
 {
     public static class DpsAdtAllocationFunc
     {
-        private const string adtAppId = "https://digitaltwins.azure.net";
         private static string adtInstanceUrl = Environment.GetEnvironmentVariable("ADT_SERVICE_URL");
         private static readonly HttpClient singletonHttpClientInstance = new HttpClient();
 
@@ -97,14 +96,8 @@ namespace Samples.AdtIothub
         public static async Task<string> FindOrCreateTwinAsync(string dtmi, string regId, ILogger log)
         {
             // Create Digital Twins client
-            var cred = new ManagedIdentityCredential(adtAppId);
-            var client = new DigitalTwinsClient(
-                new Uri(adtInstanceUrl),
-                cred,
-                new DigitalTwinsClientOptions
-                {
-                    Transport = new HttpClientTransport(singletonHttpClientInstance)
-                });
+            var cred = new DefaultAzureCredential();
+            var client = new DigitalTwinsClient(new Uri(adtInstanceUrl), cred);
 
             // Find existing DigitalTwin with registration ID
             try
