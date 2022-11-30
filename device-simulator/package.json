@@ -1,16 +1,16 @@
 {
   "name": "azure-adt-sample",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Azure IoT ADT - Device Simulator - DPS",
   "author": "Eric van Uum",
   "license": "MIT",
   "dependencies": {
-    "azure-iot-provisioning-device": "^1.8.4",
-    "azure-iot-provisioning-device-mqtt": "^1.7.4",
-    "azure-iot-security-symmetric-key": "^1.7.4",
-    "azure-iot-device": "^1.17.0",
-    "azure-iot-device-mqtt": "^1.15.0",
-    "dotenv": "^8.2.0",
-    "rhea": "^1.0.15"
+    "azure-iot-device": "^1.18.1",
+    "azure-iot-device-mqtt": "^1.16.1",
+    "azure-iot-provisioning-device": "^1.9.1",
+    "azure-iot-provisioning-device-mqtt": "^1.8.1",
+    "azure-iot-security-symmetric-key": "^1.8.1",
+    "dotenv": "^16.0.3",
+    "rhea": "^3.0.1"
   }
 }
