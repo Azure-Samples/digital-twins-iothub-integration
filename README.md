@@ -4,7 +4,7 @@ languages:
 - csharp
 - nodejs
 products:
-- dotnet-core
+- dotnet
 - azure
 - azure-iot
 - azure-iot-dps
