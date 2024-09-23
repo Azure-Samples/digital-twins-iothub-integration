@@ -20,6 +20,9 @@ urlFragment: adt-iothub-provision-sample
 
 # Azure Digital Twin and IoT Hub provisioning integration sample
 
+> [!WARNING] 
+> This sample is now archived and no longer being updated.
+
 This is a sample project to show possible patterns for the automatic integration of the new Azure Digital Twins and IoT Hub. The following scenarios are implemented:
 
 * An Azure Device Provisioning Service (DPS) custom allocation Azure Function to look up details for a device in Azure Digital Twins and inform the provisioning process.
